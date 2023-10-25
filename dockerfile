@@ -6,3 +6,4 @@ RUN apt-get -y install openssh-client
 
 COPY id_rsa /root/.ssh/id_rsa
 RUN chmod 600 /root/.ssh/id_rsa
+ 
