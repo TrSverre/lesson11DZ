@@ -1,44 +1,36 @@
 pipeline {
-  agent {
-
-    docker {
-      image 'trsverre/dzlesson11'
-      args '-v /var/run/docher.sock:/var/run/docher.sock'
+    agent {
+        docker {
+                image 'trsverre/prob3'
+                args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
     }
-
-  }
-
-  stages {
-
-    stage('Copy source') {
+    stages {
+        stage('Clone repository') {
+            steps {
+                git branch: 'master', url: 'https://github.com/TrSverre/lesson11.git'
+            }
+        }
+        stage('Compile code') {
+            steps {
+                sh 'mvn package'
+            }
+        }
+        stage('Build image for prod') {
+            steps {
+                sh 'cp webapp/target/webapp.war ./'
+                sh 'docker build -t prod1 . && docker tag prod1 cr.yandex/crpoghe3r1eougaqqmpj/prod1 && docker push cr.yandex/crpoghe3r1eougaqqmpj/prod1'
+            }
+        }
+        stage('Run docker on devbe-srv01') {
       steps {
-        git(url: 'https://github.com/TrSverre/lesson11.git', poll: false)
-      }
-    }
-
-    stage('Build jar') {
-      steps {
-        sh 'mvn package'
-      }
-    }
-
-    stage('Make docker image') {
-      steps {
-        sh 'cp -R gateway-api/build/libs/* docker-setup/shop/gateway-api && cd docker-setup/shop/gateway-api && docker build --tag=gateway-api .'
-        sh '''docker tag gateway-api devcvs-srv01:5000/shop2-backend/gateway-api:2-staging && docker push devcvs-srv01:5000/shop2-backend/gateway-api:2-staging'''
-
-      }
-    }
-
-    stage('Run docker on devbe-srv01') {
-      steps {
-        sh 'ssh-keyscan -H devbe-srv01 >> ~/.ssh/known_hosts'
-        sh '''ssh jenkins@devbe-srv01 << EOF
-	sudo docker pull devcvs-srv01:5000/shop2-backend/gateway-api:2-staging
-	cd /etc/shop/docker
-	sudo docker-compose up -d
+         sh 'pwd && cd /home/ && pwd && ls -la && ssh-keyscan 158.160.119.138 >> ~/.ssh/known_hosts'
+         //sh 'chmod 600 /home/jenkins/.ssh/id_rsa'
+        sh '''ssh user@158.160.119.138 << EOF
+	sudo docker pull cr.yandex/crpoghe3r1eougaqqmpj/prod1
+	sudo docker run -d -p 8010:8080 cr.yandex/crpoghe3r1eougaqqmpj/prod1
 EOF'''
       }
     }
-  }
-}
+        
+    }}
